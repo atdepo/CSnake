@@ -163,6 +163,7 @@ int tmp=x;
     arena[tailx][taily]=S;
     tailx--;
   }
+
 }
 
 void move_down(game_t arena[][COLUMNS]){
