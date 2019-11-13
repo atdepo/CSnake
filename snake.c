@@ -6,27 +6,26 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include <sys/ioctl.h>
-#include <stropts.h>
+//#include <stropts.h>
 #include <termios.h>
 #include <fcntl.h>
 
 #define ROWS 23
 #define COLUMNS 80
-#define B  L"\u2501"
-#define S  L"\u2800"
-#define UL L"\u250F"
-#define UR L"\u2513"
-#define BL L"\u2517"
-#define BR L"\u251B"
-#define BP L"\u2503"
-#define PR L"\u227B"
-#define PL L"\u227A"
-#define PU L"\u2227"
-#define PD L"\u2228"
-#define PH L"\u0040"
-//#define FOOD L"\u25AA"
-#define FOOD L"\u2605"
-#define T 100000
+#define B  L"\u2501"//STRAIGHT LINE
+#define S  L"\u2800"//EMPTY SPACE
+#define UL L"\u250F"//UPPER LEFT CORNER
+#define UR L"\u2513"//UPPER RIGHT CORNER
+#define BL L"\u2517"//BOTTOM LEFT CORNER
+#define BR L"\u251B"//BOTTOM RIGHT CORNER
+#define BP L"\u2503"//VERTICAL LINE
+#define PR L"\u227B"//PLAYER RIGHT SPRITE
+#define PL L"\u227A"//PLAYER LEFT SPRITE
+#define PU L"\u2227"//PLAYER UP SPRITE
+#define PD L"\u2228"//PLAYER DOWN SPRITE
+#define PH L"\u0040"//PLAYER HEAD SPRITE
+#define FOOD L"\u2605"//FOOD SPRITE
+#define T 100000  //TIME FROM ONE MOVE TO THE OTHER
 #define game_t int*
 
 struct termios saved_attributes;
@@ -47,16 +46,16 @@ void removeTail(game_t arena[][COLUMNS]);
 int x,y; //Position of the head of snake
 int tailx,taily; //position to the tail of the snake
 int flag=0; // 0=no food spawned, 1=food already spawned
-int size=1;
 
 int main(){
 
-setlocale(LC_ALL, "");
+setlocale(LC_ALL, ""); //TO PRINT UNICODE CHARACTERS
 //setlocale(LC_CTYPE,"C-UTF-8");
 //helloScreen();
 fcntl(0, F_GETFL, 0);
-fcntl(0, F_SETFL,O_NONBLOCK);
-
+fcntl(0, F_SETFL,O_NONBLOCK);//USED TO AVOID INPUT WAITING
+  srand(time(0));
+//DEFINITION OF PLAYABLE MATRIX
 game_t ciccio[ROWS][COLUMNS]={
 {UL,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,UR},
 {BP,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,BP},
@@ -83,18 +82,18 @@ game_t ciccio[ROWS][COLUMNS]={
 {BL,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,BR}
 };
 
-spawnPlayer(ciccio);
-printArena(ciccio);
+spawnPlayer(ciccio); //SPAWN PLAYER AT INITIAL POSITION
+printArena(ciccio);  //PRINT THE ARENA INITIALLY WITH PLAYER IN THE MIDDLE
 char mv,c;
 int n;
-set_input_mode();
+set_input_mode();   //SETTING TERMINAL MODE TO EVITATE ECHOING OF THE PRESSED CHARACTERS AND TAKING INPUT WITHOUT THE '\n'
 
 while(1){
-spawnFood(ciccio);
+spawnFood(ciccio); //TRY TO SPAWN FOOD IF IT'S POSSIBLE
 
-  read(0, &c, 1);
-  if(c=='w'||c=='a'||c=='s'||c=='d')
-    mv=c;
+  read(0, &c, 1);                       //
+  if(c=='w'||c=='a'||c=='s'||c=='d')    // IF IS PRESSED A VALID CHARACTER MOVE IN THAT DIRECTION
+    mv=c;                               //
 
 
 system("clear");
@@ -118,7 +117,7 @@ system("clear");
 
   }
 printArena(ciccio);
-//printf("move%c\n",mv);
+//printf("move%c\n",mv)
   usleep(T);
 }
 reset_input_mode();
@@ -131,6 +130,7 @@ void printArena(game_t arena[][COLUMNS]){
   printf("\n");
   }
 //printf("tail:%d-%d/head:%d-%d",tailx,taily,x,y);
+
   }
 
 void spawnPlayer(game_t arena[][COLUMNS]){
@@ -223,8 +223,6 @@ y++;
 
 }
 
-
-
 void set_input_mode (){
 struct termios tattr;
 char *name;
@@ -271,9 +269,13 @@ endwin();
 void spawnFood(game_t arena[][COLUMNS]){
 
 if(flag==0){
-  srand(time(0));
-  int nx=rand()%ROWS+1;
-  int ny=rand()%COLUMNS+1;
+
+  int nx=rand()%(ROWS-2)+1;
+  int ny=rand()%(COLUMNS-2)+1;
+  if(arena[nx][ny]==PH||arena[nx][ny]==PU||arena[nx][ny]==PD||arena[nx][ny]==PL||arena[nx][ny]==PR){
+    nx=rand()%(ROWS-2)+1;
+    ny=rand()%(COLUMNS-2)+1;
+  }
   arena[nx][ny]=FOOD;
   flag=1;
 }
